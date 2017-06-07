@@ -1,0 +1,163 @@
+---
+title: "Auto3.9"
+author: "Rahul Bhat"
+date: "6/5/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#######################################################################################
+#Exercise 7.8
+####Fit some of the non-linear models investigated in this chapter to the Auto data set. Is there evidence for non-linear relationships in this data set? Create some informative plots to justify your answer.
+######################################################################################
+
+```{r}
+library(ISLR)
+library(boot)
+library(ggplot2)
+library(gridExtra)
+library(MASS)
+library(class)
+library(caTools)
+```
+
+####Fit some of the non-linear models investigated in this chapter to the Auto data set. 
+```{r}
+data(Auto)
+attach(Auto)
+summary(Auto)
+set.seed(123)
+pairs(Auto)
+#Answer: As we have also mentioned in the earlier exercises that "mpg" is negatively correlated to cylinders, displacement,horsepower and weight. So, We will try polynomial regression first. 
+```
+
+####Polynomial regression
+```{r}
+#We first fit the model using the following command:
+fit=lm(mpg~poly(displacement ,4), data=Auto)
+coef(summary(fit))
+#This syntax fits a linear model, using the lm() function, in order to predict mpg using a fourth-degree polynomial in displacement: poly(displacement,4). The function returns a matrix whose columns are a basis of orthogonal polynomials, which essentially means that each column is a linear orthogonal combination of the variables age, displacement^2, displacement^3 and displacement^4.
+```
+####We now create a grid of values for displacement at which we want predictions, and then call the generic predict() function, specifying that we want standard errors as well.
+```{r}
+dis.lims=range(displacement)
+dis.grid=seq(from=dis.lims[1],to=dis.lims[2])
+preds=predict(fit,newdata=list(displacement=dis.grid),se=TRUE)
+se.bands=cbind(preds$fit+2*preds$se.fit,preds$fit-2*preds$se.fit )
+```
+####Finally, we plot the data and add the fit from the degree-4 polynomial.
+
+```{r}
+par(mfrow=c(1,2),mar=c(4.5,4.5,1,1) ,oma=c(0,0,4,0))
+plot(displacement,mpg,xlim=dis.lims ,cex=.5,col="darkgrey")
+title("Degree -4 Polynomial ",outer=T)
+lines(dis.grid,preds$fit,lwd=2,col="blue")
+matlines(dis.grid,se.bands,lwd=1,col="blue",lty=3)
+#Here the mar and oma arguments to par() allow us to control the margins of the plot, and the title() function creates a figure title that spans both subplots.
+```
+
+####In performing a polynomial regression we must decide on the degree of the polynomial to use and One way to do this is by using hypothesis tests. We will now fit models ranging from linear to a degree-5 polynomial and seek to determine the simplest model which is sufficient to explain the relationship between mpg and displacement. We use the anova() function, which performs an analysis of variance (ANOVA, using an F-test) in order to test the null hypothesis that a model M1 is sufficient to explain the data against the alternative hypothesis that a more complex model M2 is required. In order to use the anova() function, M1 and M2 must be nested models: the predictors in M1 must be a subset of the predictors in M2. In this case, we fit five different models and sequentially compare the simpler model to the more complex model.
+```{r}
+fit.1=lm(mpg~displacement,data=Auto)
+fit.2=lm(mpg~poly(displacement,2),data=Auto) 
+fit.3=lm(mpg~poly(displacement,3),data=Auto) 
+fit.4=lm(mpg~poly(displacement,4),data=Auto) 
+fit.5=lm(mpg~poly(displacement,5),data=Auto) 
+anova(fit.1,fit.2,fit.3,fit.4,fit.5)
+#Training RSS decreases over time.
+#The p-value comparing the linear Model 1 to the quadratic Model 2 is essentially zero (<10−15), indicating that a linear fit is not sufficient. Similarly the p-value comparing the quadratic Model 2 to the cubic Model 3 is low (0.3078), so the quadratic fit is also insufficient. Model 5 seems unnecessary because its p-value is 0.45. Hence, either a cubic or a quartic polynomial appear to provide a reasonable fit to the data, but lower or higher order models are not justified.
+```
+#### As an alternative to using hypothesis tests and ANOVA, we could choose the polynomial degree using cross-validation. Let's check for the optimal degree of the Polynomial.
+```{r}
+cv.error <- rep(0,12)
+for (i in 1:12) {
+  glm.fit <- glm(mpg~poly(displacement,i), data=Auto)
+  cv.error[i] <- cv.glm(Auto, glm.fit, K=10)$delta[1]  # [1]:std, [2]:bias-corrected
+}
+cv.error
+which.min(cv.error)
+#[1] 10 - cross-validation selected a 10th-degree polynomial.
+#Plot the graph
+plot(1:12, cv.error, xlab = "Degree", ylab = "Test MSE", type = "l")
+d.min <- which.min(cv.error)
+points(which.min(cv.error), cv.error[which.min(cv.error)], col = "blue", pch = 20)
+#d=10 is the optimal degree for the polynomial.
+
+summary(cv.error)
+#We got "d=10" that is the optimal degree of the polynomial. Now the next function we can use is step functions.
+```
+
+####Step Functions
+
+
+####The function cut() automatically picked the cutpoints at 165 and 262. We can also specify our own cutpoints directly using the breaks option. The function cut() returns an ordered categorical variable; the lm() function then creates a set of dummy variables for use in the regression. The displacement<165 category is left out.
+
+
+```{r}
+#In order to fit a step function, we use the cut() function.
+table(cut(displacement,4))
+step.fit=lm(mpg~cut(displacement,4),data=Auto)
+coef(summary(step.fit))
+
+#Step Function Error
+step.error = rep(NA, 10)
+for (i in 2:10) {
+  Auto$dis.cut = cut(Auto$displacement, i)
+  fit = glm(mpg ~ dis.cut, data = Auto)
+  step.error[i] = cv.glm(Auto, fit, K = 10)$delta[2]
+}
+which.min(step.error)
+plot(2:10, step.error[-1], xlab = "Cuts", ylab = "Test MSE", type = "l") #Plot the graph
+d.min <- which.min(step.error)
+points(which.min(step.error), step.error[which.min(step.error)], col = "red", pch = 20)
+step.error
+summary(step.error)
+# We can see that from the above plot that the error is minimum for 9 cuts. Next we can use spline functions.
+```
+
+####Spline functions.
+```{r}
+library(splines)
+spline.error <- rep(NA, 10)
+for (i in 3:10) {
+  fit <- glm(mpg ~ ns(displacement, df = i), data = Auto)
+  spline.error[i] <- cv.glm(Auto, fit, K = 10)$delta[2]
+}
+which.min(spline.error)
+plot(3:10, spline.error[-c(1, 2)], xlab = "Cuts", ylab = "Test MSE", type = "l")
+d.min <- which.min(spline.error)
+points(which.min(spline.error), spline.error[which.min(spline.error)], col = "red", pch = 20)
+spline.error
+summary(spline.error)
+# The error is minimum for 9 degrees. Next we can use GAMs. 
+```
+####We now fit a GAM to predict wage using natural spline functions of horsepower and displacement and will treat cylinders as a qualitative predictor. Since this is just a big linear regression model we can simply do this using the lm() function.
+
+####The s() function, which is part of the gam library, is used to indicate that we would like to use a smoothing spline. We specify that the function of s() horsepower should have 4 degrees of freedom, and that the function of displacement will have 5 degrees of freedom. Since cylinders is qualitative, we leave it as is, and it is converted into four dummy variables. We use the gam() function in order to fit a GAM using these components. 
+```{r}
+library(gam)
+Auto$cylinders <- factor(Auto$cylinders)  # turn into factor variable
+gam1=lm(mpg~ns(horsepower,4)+ns(displacement ,5)+cylinders ,data=Auto)
+gam.m3=gam(mpg~s(horsepower ,4)+s(displacement ,5)+cylinders ,data=Auto)
+par(mfrow=c(1,3))
+plot(gam.m3, se=TRUE,col="blue")
+plot.gam(gam1, se=TRUE, col="red")
+#Both horsepower and displacement are significant with cylinders.
+```
+
+```{r}
+gam.m1=gam(mpg~s(displacement ,5)+cylinders ,data=Auto)
+gam.m2=gam(mpg~horsepower+s(displacement ,5)+cylinders ,data=Auto)
+
+anova(gam.m1,gam.m2,gam.m3,test="F")
+summary(gam.m3)
+````
+
+
+
+
+
+

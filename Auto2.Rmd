@@ -1,0 +1,219 @@
+---
+title: "Auto2"
+author: "Rahul Bhat"
+date: "6/3/2017"
+output: html_document
+---
+
+#####################################################################################
+#Exercise 2.9
+#####################################################################################
+
+####Load libraries
+
+```{r} 
+library(ISLR)
+library(corrplot)
+library(car)
+library(ggplot2)
+library(dplyr)
+```
+
+####Load Auto dataset
+
+```{r}
+data(Auto)
+```
+
+####Make sure that the missing values have been removed from the data. So first check the data. 
+
+```{r}
+str(Auto)
+dim(Auto)
+```
+
+####check the list rows of data that have missing values.
+
+```{r}
+Auto[!complete.cases(Auto),] 
+is.na(Auto) #check missing values
+Auto <- na.omit(Auto)  #remove missing values
+str(Auto)
+```
+
+####(a).Which of the predictors are quantitative, and which are qualitative?
+
+```{r}
+summary(Auto)
+#Answer - All variables has a numerical structure, hence are quantitative except variable "name" and "origin".
+```
+
+####(b). What is the range of each quantitative predictor? You can answer this using the range() function.
+
+```{r}
+range(Auto$weight)
+
+range(Auto$acceleration)
+
+range(Auto$year)
+
+range(Auto$cylinders)
+
+range(Auto$mpg)
+
+range(Auto$displacement)
+
+range(Auto$horsepower)
+```
+
+####(c) What is the mean and standard deviation of each quantitative predictor?
+
+```{r}
+
+#mean and sd of Auto$acceleration
+mean(Auto$weight)
+sd(Auto$weight)
+
+
+#mean and sd of Auto$acceleration
+mean(Auto$acceleration)
+sd(Auto$acceleration)
+
+
+#mean and sd of Auto$year
+mean(Auto$year)
+sd(Auto$year)
+
+#mean and sd of Auto$cylinders
+mean(Auto$cylinders)
+sd(Auto$cylinders)
+
+
+#mean and sd of Auto$mpg
+mean(Auto$mpg)
+sd(Auto$mpg)
+
+# mean and sd of Auto$displacement
+mean(Auto$displacement)
+sd(Auto$displacement)
+
+# mean and sd of Auto$horsepower
+mean(Auto$horsepower)
+sd(Auto$horsepower)
+```
+
+####(d) Remove 10th to 85 observations and then check mean and sd.
+
+```{r}
+Auto2 = Auto[-c(10:85),] #remove 10th to 85 observations
+```
+
+####Range after removing 10th and 85th observations
+
+```{r}
+
+#range of Auto2$cylinders
+range(Auto2$cylinders)
+range(Auto2$mpg)
+
+#range of Auto2$displacement
+range(Auto2$displacement)
+
+#range of Auto2$horsepower
+range(Auto2$horsepower)
+
+#range of Auto2$weight
+range(Auto2$weight)
+
+#range of Auto2$acceleration
+range(Auto2$acceleration)
+
+#range of Auto2$year
+range(Auto2$year)
+```
+
+####Mean and sd after removing 10th to 85th observation.
+
+```{r}
+#mean and sd of Auto2$mpg
+mean(Auto2$mpg)
+sd(Auto2$mpg)
+
+
+#mean and sd of Auto2$cylinders
+mean(Auto2$cylinders)
+sd(Auto2$cylinders)
+
+
+#mean and sd of Aut02$displacement
+mean(Auto2$displacement)
+sd(Auto2$displacement)
+
+
+#mean and sd of Auto2$horsepower
+mean(Auto2$horsepower)
+sd(Auto2$horsepower)
+
+#mean and sd of Auto2$weight
+mean(Auto2$weight)
+sd(Auto2$weight)
+
+
+#mean and sd of Auto2$accelertaion
+mean(Auto2$acceleration)
+sd(Auto2$acceleration)
+
+
+#mean and sd of Auto2$year
+mean(Auto2$year)
+sd(Auto2$year)
+```
+
+####(e).Investigate the predictors graphically, using scatterplots or other tools of your choice.
+
+```{r}
+data("Auto")
+str(Auto)
+pairs(Auto)
+```
+
+####Create some plots highlighting the relationships among the predictors.
+```{r}
+
+# There is a correlation between weight and mpg (heavier weight correlated with lower mpg). As the "weight" increases the "mpg"" decreases and vice versa. 
+plot(Auto$mpg, Auto$weight) 
+
+# As the number of cylinder increases mpg decreases and vice versa. 
+plot(Auto$mpg, Auto$cylinders) 
+
+# Cars will be more efficient over time
+plot(Auto$mpg, Auto$year) 
+
+# Cars from origin Japanese(3) have higher mpg than US(1) and European(2) cars.
+plot(Auto$mpg, Auto$origin) 
+```
+
+```{r}
+plot(Auto$weight, Auto$horsepower)
+pairs(~ weight + horsepower, Auto)
+# As we can see from the plot, there is a positive correlation between weight and horsepower.
+```
+
+```{r}
+plot(Auto$mpg, Auto$horsepower)
+pairs(~ mpg + horsepower, Auto)
+# This plot shows that there is a negative correlation between mpg and horsepower.
+```
+
+```{r}
+pairs(~ mpg + year + horsepower, Auto)
+# We can see that from this plot that there is an interesting relationship between Year of manufacture, mpg and horsepower. 
+```
+
+####(f) Suppose that we wish to predict gas mileage (mpg) on the basis of the other variables. Do your plots suggest that any of the other variables might be useful in predicting mpg?
+
+```{r}
+pairs(Auto)
+# Answer: Yes, displacement, weight, horsepower and year, they all are correlated with mpg as we have also mentioned above. Yes, these correlations shows that they would be good predictors to use.
+```
+

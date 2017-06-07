@@ -1,0 +1,136 @@
+---
+title: "Auto4.11"
+author: "Rahul Bhat"
+date: "6/6/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ISLR)
+library(ggplot2)
+library(gridExtra)
+library(MASS)
+library(class)
+library(caTools)
+data(Auto)
+summary(Auto)
+med = median(Auto$mpg)
+mpg01 = ifelse(Auto$mpg > med, 1, 0)
+Auto = data.frame(Auto, mpg01)
+Auto
+```
+
+####(b). Explore the data graphically in order to investigate the association between mpg01 and the other features. Scatterplots and boxplots may be useful tools to answer this question.
+
+```{r}
+cor(Auto[, -9])
+pairs(Auto) 
+```
+
+#### Box Plots to explore the data graphically
+
+```{r}
+boxplot(cylinders ~ mpg01, data = Auto, main = "Cylinders vs mpg01")
+boxplot(displacement ~ mpg01, data = Auto, main = "Displacement vs mpg01")
+boxplot(horsepower ~ mpg01, data = Auto, main = "Horsepower vs mpg01")
+boxplot(weight ~ mpg01, data = Auto, main = "Weight vs mpg01")
+boxplot(acceleration ~ mpg01, data = Auto, main = "Acceleration vs mpg01")
+boxplot(year ~ mpg01, data = Auto, main = "Year vs mpg01")
+# From the above plots we can see that there is a relationships between “mpg01” and “cylinders”, “weight”, “displacement” and “horsepower”.
+```
+
+```{r}
+pairs(mpg01 ~ + weight + horsepower + displacement + cylinders, Auto)
+```
+
+####(c) Split the data into a training set and a testing dataset.
+
+```{r}
+attach(Auto)
+set.seed(123)
+sample <- rnorm(nrow(Auto))
+test <- sample > quantile(sample,0.75)
+train <- !test
+sample.train <- Auto[train,]
+sample.test <- Auto[test,]
+```
+
+####(d). Perform LDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+
+```{r}
+library(MASS)
+lda.fit = lda(mpg01 ~ cylinders + weight + displacement + horsepower, data=sample.train)
+lda.fit
+lda.class=predict(lda.fit,sample.test)$class
+table(lda.class,sample.test$mpg01)
+mean(lda.class==sample.test$mpg01)
+# The LDA model gives a 93.87% rate i.e 6.13 error rate
+```
+
+####(e). Perform QDA on the training data in order to predict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+
+```{r}
+qda.fit = qda(mpg01 ~ cylinders + weight + displacement + horsepower, data=sample.train)
+qda.fit
+qda.class=predict(qda.fit,sample.test)$class
+table(qda.class,sample.test$mpg01)
+mean(qda.class==sample.test$mpg01)
+#LDA performed better than QDA, in our case QDA achieved 91.83% accuracy on the test set.
+```
+
+####(f). Perform logistic regression on the training data in order to pre- dict mpg01 using the variables that seemed most associated with mpg01 in (b). What is the test error of the model obtained?
+
+```{r}
+fit.glm = glm(mpg01 ~ cylinders + weight + displacement + horsepower, family=binomial, data=sample.train)
+summary(fit.glm)
+glm.probs=predict(fit.glm,sample.test,type="response")
+glm.pred=rep(0,nrow(sample.test))
+glm.pred[glm.probs > 0.50]=1
+table(glm.pred,sample.test$mpg01)
+mean(glm.pred==sample.test$mpg01)
+# The Logistic Regression model gives an accuracy of 93.87%, hence 6.13% test error rate. LDA and Logistic Regression models gave same error rate. 
+#If we run these models again and again, we can see that the accuracy rate fluctuates a bit. Sometimes LDA gives better results and sometimes QDA and sometimes Logistic Regression.
+```
+
+####(g). Perform KNN on the training data, with several values of K, in order to predict mpg01. Use only the variables that seemed most associated with mpg01 in (b). What test errors do you obtain? Which value of K seems to perform the best on this data set?
+
+```{r}
+library(class)
+set.seed(12345)
+
+train.Auto = sample.train[,c("horsepower","weight","cylinders", "displacement")]
+test.Auto =  sample.test[,c("horsepower","weight","cylinders", "displacement")]
+knn.pred=knn(train.Auto,test.Auto,sample.train$mpg01,k=1)
+table(knn.pred,sample.test$mpg01)
+mean(knn.pred==sample.test$mpg01)
+#[1] 0.877551
+
+knn.pred=knn(train.Auto,test.Auto,sample.train$mpg01,k=20)
+table(knn.pred,sample.test$mpg01)
+mean(knn.pred==sample.test$mpg01)
+#[1] 0.8979551
+
+knn.pred=knn(train.Auto,test.Auto,sample.train$mpg01,k=50)
+table(knn.pred,sample.test$mpg01)
+mean(knn.pred==sample.test$mpg01)
+#[1] 0.9183673
+
+knn.pred=knn(train.Auto,test.Auto,sample.train$mpg01,k=100)
+table(knn.pred,sample.test$mpg01)
+mean(knn.pred==sample.test$mpg01)
+#[1] 0.9081633
+
+#k=1, 12.25% test error rate. 
+#k=30, 10.21% test error rate. 
+#k=50, 8.17% test error rate. 
+#k=100, 9.19% test error rate. 
+#In our case "K" of 50 seems to perform the best. So 50 nearest neighbors.
+```
+
+
+
+

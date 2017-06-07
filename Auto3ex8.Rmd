@@ -1,0 +1,77 @@
+---
+title: "Auto3.8"
+author: "Rahul Bhat"
+date: "6/5/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+chooseCRANmirror(graphics=FALSE, ind=1)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(error = TRUE)
+```
+
+#######################################################################################
+#Exercise 3.8
+####This question involves the use of simple linear regression on the Auto data set.
+######################################################################################
+
+####(a). Use the lm() function to perform a simple linear regression with mpg as the response and horsepower as the predictor. Use the summary() function to print the results. Comment on the output.
+
+```{r}
+library(ISLR)
+library(corrplot)
+library(car)
+library(ggplot2)
+library(dplyr)
+library(lmtest)
+```
+
+```{r}
+data(Auto)
+lm = lm(mpg ~ horsepower, data=Auto)
+summary(lm)
+```
+
+####(i). Is there a relationship between the predictor and the response?
+```{r}
+# Answer: Yes, there is a relationship between the predictor and the response. 
+```
+
+####(ii). How strong is the relationship between the predictor and the response?
+
+```{r}
+# Answer: The mean of the response and the RSE is used to calculate the residual error relative to the response. In our case the mean of "mpg" which we calculated in the last exercise was 23.4459 and now we can see the RSE of lm we got is 4.906. This shows that the percentage error is 20.9248% and the R^2 of the lm is 0.6059 (60.59%) of the variability in “mpg” can be explained using “horsepower”.
+```
+
+####(iii). Is the relationship between the predictor and the response positive or negative?
+
+```{r}
+# Answer: The relationship between the predictor and the response is negative because if the horsepower is more than the mpg fuel efficiency is less. 
+```
+
+####(iv). What is the predicted mpg associated with a horsepower of 98? 
+
+```{r}
+predict(lm, data.frame(horsepower=c(98)))
+```
+
+####What are the associated 95 % confidence and prediction intervals?
+
+```{r}
+predict(lm, data.frame(horsepower=c(95)), interval = "confidence")
+predict(lm, data.frame(horsepower=c(95)), interval = "prediction")
+```
+
+####(b). Plot the response and the predictor.
+
+```{r}
+plot(Auto$horsepower, Auto$mpg)
+abline(lm)
+```
+
+####(c). Use the plot() function to produce diagnostic plots of the least squares regression fit.
+```{r}
+par(mfrow=c(2,2))
+plot(lm)
+```
